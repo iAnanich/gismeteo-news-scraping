@@ -8,7 +8,7 @@
 import scrapy
 
 
-class News0Item(scrapy.Item):
+class NewsListItem(scrapy.Item):
     url = scrapy.Field()
     header = scrapy.Field()
     description = scrapy.Field()
