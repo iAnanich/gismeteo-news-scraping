@@ -13,7 +13,7 @@ def clear_description(description: str) -> str:
 def fetch_latest_id() -> int:
     content = str(r.get('https://app.scrapinghub.com/api/items.csv?project={project}&spider={spider}&include_headers=1&fields={fields}&apikey={key}'.format(
         project='200327',
-        spider='news0',
+        spider='news-list',
         fields='id',
         key=get_api_key(),
     )).content)  # looks like 'b\'"id"\\n\''
