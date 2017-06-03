@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import scrapy
-from ..items import NewsListItem, LatestNewsIdItem
+from ..items import NewsListItem, LatestNewsIndexItem
 from .tools import (fetch_latest_job,
-                    get_arguments)
+                    get_arguments,
+                    clear)
 
 
 class NewsListSpider(scrapy.Spider):
@@ -26,11 +27,11 @@ class NewsListSpider(scrapy.Spider):
             else:
                 header = selector.xpath('div[@class="item__title"]/a/text()').extract_first()
                 tag = selector.xpath('p[@class="item__date links-black"]/a/text()').extract_first()
-                description = selector.xpath('div[@class="item__descr"]/text()').extract_first().replace('\xa0', ' ')
+                description = clear(selector.xpath('div[@class="item__descr"]/text()').extract_first())
                 url = 'https://{host}{path}'.format(host=self.allowed_domains[0], path=path)
                 indexes.append(index)
                 yield NewsListItem(header=header, url=url, description=description, tag=tag)
-        yield LatestNewsIdItem(index=max(indexes))
+        yield LatestNewsIndexItem(index=max(indexes))
 
     def _fetch_latest_scraped_id(self) -> int:
         table = fetch_latest_job(spider=self.name,

@@ -23,3 +23,7 @@ def get_arguments() -> dict:
             args = arguments[i+1].split('=')
             dictionary[args[0]] = args[1]
     return dictionary
+
+
+def clear(string: str) -> str:
+    return string.replace('\xa0', ' ')
