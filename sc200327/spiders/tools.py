@@ -27,3 +27,17 @@ def get_arguments() -> dict:
 
 def clear(string: str) -> str:
     return string.replace('\xa0', ' ')
+
+
+def clear_text(item) -> str:
+    string = clear(str(item))
+    return string.replace('\n', '')
+
+
+def convert_list_to_string(lst: list, separator: str, handler=str) -> str:
+    if len(lst) == 0:
+        return ''
+    string = handler(lst[0])
+    for item in lst[1:]:
+        string += separator + handler(item)
+    return string
