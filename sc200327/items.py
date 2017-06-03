@@ -22,4 +22,5 @@ class LatestNewsIndexItem(scrapy.Item):
 class EventItem(scrapy.Item):
     header = scrapy.Field()
     tags = scrapy.Field()
+    url = scrapy.Field()
     text = scrapy.Field()
