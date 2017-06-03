@@ -13,4 +13,14 @@ class NewsListItem(scrapy.Item):
     header = scrapy.Field()
     description = scrapy.Field()
     tag = scrapy.Field()
-    id = scrapy.Field()
+
+
+class LatestNewsIndexItem(scrapy.Item):
+    index = scrapy.Field()
+
+
+class EventItem(scrapy.Item):
+    header = scrapy.Field()
+    tags = scrapy.Field()
+    url = scrapy.Field()
+    text = scrapy.Field()
