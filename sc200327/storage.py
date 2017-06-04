@@ -1,8 +1,10 @@
 import os
+from datetime import datetime
+
 import gspread
 import scrapy
-from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials as Creds
+
 from .args import start_arguments
 
 
@@ -32,20 +34,25 @@ class StorageMaster:
 
 
 class StorageSession:
-
-    def __init__(self, spreadsheet: gspread.Spreadsheet, spider_id: int):
+    def __init__(self, spreadsheet: gspread.Spreadsheet):
         self._spreadsheet = spreadsheet
-        self._worksheet = self._spreadsheet.get_worksheet(spider_id - 1)
+        spider = int(start_arguments.spider_id)
+        self._worksheet = self._spreadsheet.get_worksheet(spider - 1)
         if self._worksheet is None:
-            raise RuntimeError('No Worksheet with this id: ' + str(spider_id-1))
-        self._spider_id = spider_id
+            raise RuntimeError('No Worksheet with this id: ' + str(spider - 1))
         self._rows = None
+        self._job_url = 'https://app.scrapinghub.com/p/{project}/{spider}/{job}'.format(
+            project=start_arguments.current_project_id,
+            spider=start_arguments.spider_id,
+            job=start_arguments.job_id,
+        )
 
     def open_session(self):
-        print('<<< Session for #{spider_id} spider in "{tittle}" worksheet STARTed.'.format(
-            spider_id=self._spider_id,
+        print('<<< Session for #{spider} spider in "{tittle}" worksheet STARTed.'.format(
+            spider=start_arguments.spider_id,
             tittle=self._worksheet.title,
         ))
+        self._add_starting_row()
         self._rows = []
         return self
 
@@ -53,18 +60,10 @@ class StorageSession:
         self._rows.append(Row(item).as_list())
 
     def close_session(self) -> None:
-        self._rows.append(Row({
-            'url': 'https://app.scrapinghub.com/p/{project}/{spider}'.format(
-                project=start_arguments.project_id,
-                spider=self._spider_id,
-            ),
-            'header': str(datetime.now()),
-            'tags': '-----',
-            'text': '-----',
-        }).as_list())
+        self._add_ending_row()
         self._write_data()
-        print('>>> Session for #{spider_id} spider in "{tittle}" worksheet ENDed.'.format(
-            spider_id=self._spider_id,
+        print('>>> Session for #{spider} spider in "{tittle}" worksheet ENDed.'.format(
+            spider=start_arguments.spider_id,
             tittle=self._worksheet.title,
         ))
 
@@ -72,17 +71,39 @@ class StorageSession:
         for row in self._rows:
             self._worksheet.append_row(row)
 
+    def _add_ending_row(self):
+        self._rows.append(Row(
+            url='-----',
+            header='{} :: {} articles scraped'.format(str(datetime.now()), str(len(self._rows))),
+            tags=self._job_url,
+            text='-----',
+        ).as_list())
+
+    def _add_starting_row(self):
+        self._worksheet.append_row(Row(
+            url='-----',
+            header='{} :: BEGIN'.format(str(datetime.now())),
+            tags=self._job_url,
+            text='-----',
+        ).as_list())
+
 
 class Row:
+    """ Place to configure fields order in a table"""
+    columns_order = ['url', 'header', 'tags', 'text']
 
-    def __init__(self, item: scrapy.item.Item or dict):
-        self.item = item
+    def __init__(self, item: scrapy.item.Item or dict = None,
+                 url: str = None,
+                 header: str = None,
+                 tags: str = None,
+                 text: str = None):
+        if item is not None:
+            self.item = item
+        else:
+            self.item = dict(url=url, header=header, tags=tags, text=text)
 
     def as_list(self) -> list:
-        """ Place to configure fields order in a table"""
-        return [
-            self.item['url'],
-            self.item['header'],
-            self.item['tags'],
-            self.item['text'],
-        ]
+        lst = []
+        for column in self.columns_order:
+            lst.append(self.item[column])
+        return lst

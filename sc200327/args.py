@@ -1,17 +1,27 @@
+import os
 import sys
 
 
 class ArgumentsMaster:
-    """ Class for control of given at tart arguments. Arguments can be get from spider."""
-    # TODO: try move this logic to spiders
+    """ Class for control of given at start arguments, and some environment variables.
+    Contains only STR objects
+    Arguments can be get from spider too."""
 
     def __init__(self):
+        """ Define arguments for Python (PyCharm)"""
         self.api_key = None
         self.project_id = None
         self.spreadsheet_tittle = None
+        self.current_project_id = None
+        self.spider_id = None
+        self.job_id = None
 
         self._args_dict = self._parse_arguments()
         self.check_arguments()
+        self.get_job_key()
+
+    def get_job_key(self) -> None:
+        self.current_project_id, self.spider_id, self.job_id = os.getenv('SHUB_JOBKEY', '0/0/0').split('/')
 
     @staticmethod
     def _parse_arguments() -> dict:
@@ -23,9 +33,11 @@ class ArgumentsMaster:
                 dictionary[args[0]] = args[1]
         return dictionary
 
-    def check_arguments(self):
+    def check_arguments(self) -> None:
         try:
             if self._args_dict['FORCE'] in ['1', 'True']:
+                force = True
+            else:
                 force = True
         except KeyError:
             force = False
