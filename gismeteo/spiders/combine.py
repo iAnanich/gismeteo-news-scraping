@@ -55,11 +55,12 @@ class CombineSpider(scrapy.Spider):
             project=start_arguments.project_id,
             key=start_arguments.api_key
         )
-        if len(table) == 1:
+        if len(table) == 1:  # if there is only field name
             logging.warning('No items from previous jobs')
             return 0
-        elif table[-1][0] == '':
-            logging.warning('No "index" field from previous jobs:' + str(table))
-            return 0
         else:
-            return int(table[-1][0])
+            for row in [x[0] for x in table[1:]]:  # iterate over items
+                if row != '':  # there must be only one item with this field
+                    return int(row)
+            else:
+                raise RuntimeError('No "index" field in previous job.')
