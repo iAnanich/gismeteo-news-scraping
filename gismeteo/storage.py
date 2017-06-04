@@ -6,6 +6,7 @@ import scrapy
 from oauth2client.service_account import ServiceAccountCredentials as Creds
 
 from .args import start_arguments
+from .settings import DEFAULT_WORKSHEET_ID
 
 
 class StorageMaster:
@@ -36,10 +37,9 @@ class StorageMaster:
 class StorageSession:
     def __init__(self, spreadsheet: gspread.Spreadsheet):
         self._spreadsheet = spreadsheet
-        spider = int(start_arguments.spider_id)
-        self._worksheet = self._spreadsheet.get_worksheet(spider - 1)
+        self._worksheet = self._spreadsheet.get_worksheet(DEFAULT_WORKSHEET_ID)
         if self._worksheet is None:
-            raise RuntimeError('No Worksheet with this id: ' + str(spider - 1))
+            raise RuntimeError('No Worksheet with this id: ' + str(DEFAULT_WORKSHEET_ID))
         self._rows = None
         self._job_url = 'https://app.scrapinghub.com/p/{project}/{spider}/{job}'.format(
             project=start_arguments.current_project_id,
