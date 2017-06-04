@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import logging
+
 import scrapy
 
 from .news import NewsListSpider
@@ -23,14 +25,14 @@ class EventSpider(scrapy.Spider):
         )[1:-1]  # get urls from NewsListItem items, because last one - NewsLatestIdItem
         urls = [x[0] for x in table]
         if len(urls) == 0:
-            RuntimeWarning('No urls in previous jobs.')
+            logging.warning('No urls in previous jobs.')
             self.start_urls = []
         else:
             self.start_urls = urls
 
         super().__init__()
 
-    def parse(self, response: scrapy.selector.Selector or scrapy.http.Request):
+    def parse(self, response: scrapy.http.Response):
         # locate article
         article = response.xpath('/html/body/div[2]/div[2]/div[1]/div[2]/div[1]/div[1]/div[1]')
         # generate `tags` string

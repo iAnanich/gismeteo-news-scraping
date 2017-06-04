@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -50,7 +51,7 @@ class ArgumentsMaster:
             if force:
                 raise RuntimeError('Unable to find expected argument.' + str(e))
             else:
-                RuntimeWarning('Unable to find expected argument. Other can be undefined too.' + str(e))
+                logging.warning('Unable to find expected argument. Other can be undefined too.' + str(e))
 
 
 start_arguments = ArgumentsMaster()

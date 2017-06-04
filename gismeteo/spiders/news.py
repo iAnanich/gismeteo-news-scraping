@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import logging
+
 import scrapy
 
 from .tools import (fetch_latest_job,
@@ -12,7 +14,7 @@ class NewsListSpider(scrapy.Spider):
     allowed_domains = ['www.gismeteo.ua']
     start_urls = ['https://www.gismeteo.ua/news/']
 
-    def parse(self, response):
+    def parse(self, response: scrapy.http.Response):
         latest_index = self._fetch_latest_scraped_id()
         indexes = [latest_index]
         # locate `div` with news
@@ -41,10 +43,10 @@ class NewsListSpider(scrapy.Spider):
             key=start_arguments.api_key
         )
         if len(table) == 1:
-            RuntimeWarning('No items from previous jobs')
+            logging.warning('No items from previous jobs')
             return 0
         elif table[-1][0] == '':
-            RuntimeWarning('No "index" field from previous jobs:' + str(table))
+            logging.warning('No "index" field from previous jobs:' + str(table))
             return 0
         else:
             return int(table[-1][0])
