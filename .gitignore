@@ -102,3 +102,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Google API key
+sc200327/client-secret\.json
