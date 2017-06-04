@@ -15,16 +15,6 @@ def fetch_latest_job(fields: str, project: str, spider: str, key: str) -> list:
     return table
 
 
-def get_arguments() -> dict:
-    arguments = sys.argv
-    dictionary = {}
-    for i in range(len(arguments)):
-        if arguments[i] == '-a':
-            args = arguments[i+1].split('=')
-            dictionary[args[0]] = args[1]
-    return dictionary
-
-
 def clear(string: str) -> str:
     return string.replace('\xa0', ' ')
 

@@ -2,15 +2,14 @@
 import scrapy
 from ..items import NewsListItem, LatestNewsIndexItem
 from .tools import (fetch_latest_job,
-                    get_arguments,
                     clear)
+from ..args import start_arguments
 
 
 class NewsListSpider(scrapy.Spider):
     name = 'news-list'
     allowed_domains = ['www.gismeteo.ua']
     start_urls = ['https://www.gismeteo.ua/news/']
-    _cloud_run_arguments = get_arguments()
 
     def parse(self, response):
         latest_index = self._fetch_latest_scraped_id()
@@ -34,10 +33,12 @@ class NewsListSpider(scrapy.Spider):
         yield LatestNewsIndexItem(index=max(indexes))
 
     def _fetch_latest_scraped_id(self) -> int:
-        table = fetch_latest_job(spider=self.name,
-                                 fields='index',
-                                 project=self._cloud_run_arguments['PROJECT_ID'],
-                                 key=self._cloud_run_arguments['API_KEY'])
+        table = fetch_latest_job(
+            spider=self.name,
+            fields='index',
+            project=start_arguments.project_id,
+            key=start_arguments.api_key
+        )
         if len(table) == 1:
             RuntimeWarning('No items from previous jobs')
             return 0

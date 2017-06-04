@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 import scrapy
 from .tools import (fetch_latest_job,
-                    get_arguments,
                     convert_list_to_string,
                     clear_text)
 from .news import NewsListSpider
 from ..items import EventItem
+from ..args import start_arguments
 
 
 class EventSpider(scrapy.Spider):
     name = 'event'
     allowed_domains = ['www.gismeteo.ua']
-    _cloud_run_arguments = get_arguments()
 
     def __init__(self, *args, **kwargs):
         # fetch urls from latest job
         table = fetch_latest_job(
             fields='url',
-            project=self._cloud_run_arguments['PROJECT_ID'],
-            key=self._cloud_run_arguments['API_KEY'],
+            project=start_arguments.project_id,
+            key=start_arguments.api_key,
             spider=NewsListSpider.name
         )[1:-1]  # get urls from NewsListItem items, because last one - NewsLatestIdItem
         urls = [x[0] for x in table]
