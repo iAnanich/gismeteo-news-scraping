@@ -8,7 +8,7 @@ from .args import start_arguments
 
 class StorageMaster:
     secret_file_name = 'client-secret.json'
-    sheet_name = start_arguments.worksheet_tittle
+    sheet_name = start_arguments.spreadsheet_tittle
 
     def __init__(self):
         self._path_to_secret = self.get_path_to_file(self.secret_file_name)
@@ -35,8 +35,10 @@ class StorageSession:
 
     def __init__(self, spreadsheet: gspread.Spreadsheet, spider_id: int):
         self._spreadsheet = spreadsheet
+        self._worksheet = self._spreadsheet.get_worksheet(spider_id - 1)
+        if self._worksheet is None:
+            raise RuntimeError('No Worksheet with this id: ' + str(spider_id-1))
         self._spider_id = spider_id
-        self._worksheet = self._spreadsheet.get_worksheet(self._spider_id - 1)
         self._rows = None
 
     def open_session(self):

@@ -18,7 +18,7 @@ class Sc200327Pipeline(object):
     def open_spider(self, spider: scrapy.spiders.Spider):
         if isinstance(spider, EventSpider):
             self.is_event_spider = True
-            self.storage_session = StorageSession(StorageMaster().spreadsheet, 2).open_session()
+            self.storage_session = StorageSession(StorageMaster().spreadsheet, spider_id=2).open_session()
 
     def close_spider(self, spider: scrapy.spiders.Spider):
         if self.is_event_spider:
