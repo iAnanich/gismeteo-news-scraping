@@ -8,13 +8,6 @@
 import scrapy
 
 
-class NewsListItem(scrapy.Item):
-    url = scrapy.Field()
-    header = scrapy.Field()
-    description = scrapy.Field()
-    tag = scrapy.Field()
-
-
 class LatestNewsIndexItem(scrapy.Item):
     index = scrapy.Field()
 
