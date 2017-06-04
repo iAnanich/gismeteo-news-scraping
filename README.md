@@ -6,11 +6,9 @@ scrapinghub project for scraping news from https://www.gismeteo.ua/news/
 
 Project is writen on Python 3 (tested on 3.5).
 
-It have two spiders:
-* `news-list` - scrapes only new news from news' list (with urls) and saves their urls
-* `event` - scrapes full articles, which urls was scraped by `news-list` on latest job
+It have only one spider - `combine`. It scrapes urls (that weren't scraped yet),
+and then follows them and scrapes articles to Google Drive Sheet.
 
-`event` spider saves items into Google Drive Sheet
 
 #### Google API key
 
@@ -40,9 +38,10 @@ scrapy crawl <spider> -a <key>=<value> ...
 
 #### Storage
 
-`event` spider (I mean Pipeline, when EventSpider runs) appends (adds new row, so in scratch Google Drive Sheet
-it will have 1000+ index, so it is recomended to remove first 999 rows)
-url, header, tags and body of article to **second** worksheet (so it
-must be created before, or spider will raise an RuntimeError), and when
-all items where added, spider ends his work with a row that contains
-url to job, CPU datetime and two '-----' strings.
+Pipeline gives items (instead `LatestNewsIndexItem`) to StorageMaster that
+appends them to defined in spider `arguments` Google Drive Sheet ordered by
+url, header, tags and body of article to **second** (by default in `settings.py`)
+worksheet (so it must be created before, or spider will raise an RuntimeError), and when
+all items where added, master ends his work with a row that contains
+url to job on ScrapingHub, CPU datetime, number of scraped articles
+and two `-----` strings.
