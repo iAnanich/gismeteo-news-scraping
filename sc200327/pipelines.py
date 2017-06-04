@@ -5,8 +5,9 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 import scrapy
+
+from .spiders.event import EventSpider
 from .storage import StorageMaster, StorageSession
-from .spiders.event import EventSpider, EventItem
 
 
 class Sc200327Pipeline(object):
@@ -18,7 +19,7 @@ class Sc200327Pipeline(object):
     def open_spider(self, spider: scrapy.spiders.Spider):
         if isinstance(spider, EventSpider):
             self.is_event_spider = True
-            self.storage_session = StorageSession(StorageMaster().spreadsheet, spider_id=2).open_session()
+            self.storage_session = StorageSession(StorageMaster().spreadsheet).open_session()
 
     def close_spider(self, spider: scrapy.spiders.Spider):
         if self.is_event_spider:
