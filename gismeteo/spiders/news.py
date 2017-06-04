@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import scrapy
-from ..items import NewsListItem, LatestNewsIndexItem
+
 from .tools import (fetch_latest_job,
                     clear)
 from ..args import start_arguments
+from ..items import NewsListItem, LatestNewsIndexItem
 
 
 class NewsListSpider(scrapy.Spider):

@@ -15,7 +15,7 @@ It have two spiders:
 #### Google API key
 
 Follow steps [from this page](https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html)
-to generate `.json` key and save it to `sc200327` folder with `client-secret.json` name.
+to generate `.json` key and save it to `gismeteo` folder with `client-secret.json` name.
 
 #### Deploying
 

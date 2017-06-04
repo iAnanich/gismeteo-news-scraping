@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import scrapy
+
+from .news import NewsListSpider
 from .tools import (fetch_latest_job,
                     convert_list_to_string,
                     clear_text)
-from .news import NewsListSpider
-from ..items import EventItem
 from ..args import start_arguments
+from ..items import EventItem
 
 
 class EventSpider(scrapy.Spider):

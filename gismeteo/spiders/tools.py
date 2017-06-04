@@ -1,5 +1,5 @@
-import sys
 import csv
+
 import requests as r
 
 
