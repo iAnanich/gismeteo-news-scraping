@@ -4,14 +4,13 @@ import logging
 import scrapy
 
 from .tools import (fetch_latest_job,
-                    clear_text,
                     convert_list_to_string)
 from ..args import options
 from ..items import LatestNewsIndexItem, EventItem
 
 
-class CombineSpider(scrapy.Spider):
-    name = 'combine'
+class GismeteoSpider(scrapy.Spider):
+    name = 'gismeteo'
     allowed_domains = ['www.gismeteo.ua']
     start_urls = ['https://www.gismeteo.ua/news/']
 
@@ -39,7 +38,7 @@ class CombineSpider(scrapy.Spider):
         tags = convert_list_to_string(tags_list, ',')
         # generate `text` string
         text_blocks = article.xpath('div[@class="article__i ugc"]/div/text()').extract()
-        text = convert_list_to_string(text_blocks, '', handler=clear_text)
+        text = convert_list_to_string(text_blocks, '', handler=self._clear_text_field)
         # produce item
         yield EventItem(
             url=response.url,
@@ -64,3 +63,7 @@ class CombineSpider(scrapy.Spider):
                     return int(row)
             else:
                 raise RuntimeError('No "index" field in previous job.')
+
+    def _clear_text_field(self, text: str) -> str:
+        string = str(text).replace('\xa0', ' ')
+        return string.replace('\n', '')

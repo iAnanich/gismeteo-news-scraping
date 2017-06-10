@@ -15,15 +15,6 @@ def fetch_latest_job(fields: str, project: str, spider: str, key: str) -> list:
     return table
 
 
-def clear(string: str) -> str:
-    return string.replace('\xa0', ' ')
-
-
-def clear_text(item) -> str:
-    string = clear(str(item))
-    return string.replace('\n', '')
-
-
 def convert_list_to_string(lst: list, separator: str, handler=str) -> str:
     if len(lst) == 0:
         return ''
