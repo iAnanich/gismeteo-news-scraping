@@ -13,7 +13,8 @@ from .storage import StorageMaster, StorageSession
 class Sc200327Pipeline(object):
 
     def open_spider(self, spider: scrapy.spiders.Spider):
-        self.storage_session = StorageSession(StorageMaster().spreadsheet).open_session()
+        self.storage_session = StorageSession(StorageMaster().get_worksheet_by_spider(spider),
+                                              spider).open_session()
 
     def close_spider(self, spider: scrapy.spiders.Spider):
         self.storage_session.close_session()

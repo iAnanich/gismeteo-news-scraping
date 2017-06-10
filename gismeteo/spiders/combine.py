@@ -6,7 +6,7 @@ import scrapy
 from .tools import (fetch_latest_job,
                     clear_text,
                     convert_list_to_string)
-from ..args import start_arguments
+from ..args import options
 from ..items import LatestNewsIndexItem, EventItem
 
 
@@ -52,8 +52,8 @@ class CombineSpider(scrapy.Spider):
         table = fetch_latest_job(
             spider=self.name,
             fields='index',
-            project=start_arguments.project_id,
-            key=start_arguments.api_key
+            project=options.project_id,
+            key=options.api_key
         )
         if len(table) == 1:  # if there is only field name
             logging.warning('No items from previous jobs')

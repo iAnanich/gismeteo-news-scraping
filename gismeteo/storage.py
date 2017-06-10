@@ -1,27 +1,24 @@
-import os
+import logging
 from datetime import datetime
 
 import gspread
 import scrapy
 from oauth2client.service_account import ServiceAccountCredentials as Creds
 
-from .args import start_arguments
-from .settings import DEFAULT_WORKSHEET_ID
+from . import settings as s
+from .args import options
 
 
 class StorageMaster:
-    secret_file_name = 'client-secret.json'
-    sheet_name = start_arguments.spreadsheet_tittle
+    secret_file_name = s.GOOGLE_API_SECRET_FILENAME
+    sheet_name = options.spreadsheet_title
+    spider_to_worksheet_dict = options.spider_to_worksheet_dict
 
     def __init__(self):
-        self._path_to_secret = self.get_path_to_file(self.secret_file_name)
+        self._path_to_secret = options.get_path_to_file(self.secret_file_name)
         self._credentials = self._get_credentials()
         self._client = self._get_client()
-        self._spreadsheet = self._client.open(self.sheet_name)
-
-    @staticmethod
-    def get_path_to_file(file_name: str) -> str:
-        return os.path.join(os.path.abspath(os.path.dirname(__file__)), file_name)
+        self.spreadsheet = self._client.open(self.sheet_name)
 
     def _get_credentials(self) -> Creds:
         return Creds.from_json_keyfile_name(self._path_to_secret, ['https://spreadsheets.google.com/feeds'])
@@ -29,28 +26,34 @@ class StorageMaster:
     def _get_client(self) -> gspread.Client:
         return gspread.authorize(self._credentials)
 
-    @property
-    def spreadsheet(self) -> gspread.Spreadsheet:
-        return self._spreadsheet
+    def get_worksheet_by_spider(self, spider: scrapy.spiders.Spider) -> gspread.Worksheet:
+        try:
+            index = self.spider_to_worksheet_dict[spider.name]
+        except KeyError:
+            raise RuntimeError('No worksheet configured for this spider: {}'.format(spider.name))
+        try:
+            worksheet = self.spreadsheet.get_worksheet(index)
+            assert worksheet is not None
+        except AssertionError:
+            raise RuntimeError('No worksheet exist for this spider: {}/{}'.format(spider.name, index))
+        return worksheet
 
 
 class StorageSession:
-    def __init__(self, spreadsheet: gspread.Spreadsheet):
-        self._spreadsheet = spreadsheet
-        self._worksheet = self._spreadsheet.get_worksheet(DEFAULT_WORKSHEET_ID)
-        if self._worksheet is None:
-            raise RuntimeError('No Worksheet with this id: ' + str(DEFAULT_WORKSHEET_ID))
+    def __init__(self, worksheet: gspread.Worksheet, spider: scrapy.spiders.Spider):
+        self._spider = spider
+        self._worksheet = worksheet
         self._rows = None
-        self._job_url = 'https://app.scrapinghub.com/p/{project}/{spider}/{job}'.format(
-            project=start_arguments.current_project_id,
-            spider=start_arguments.spider_id,
-            job=start_arguments.job_id,
+        self._job_url = 'https://app.scrapinghub.com/p/{project_id}/{spider_id}/{job_id}'.format(
+            project_id=options.current_project_id,
+            spider_id=options.current_spider_id,
+            job_id=options.current_job_id,
         )
 
     def open_session(self):
-        print('<<< Session for #{spider} spider in "{tittle}" worksheet STARTed.'.format(
-            spider=start_arguments.spider_id,
-            tittle=self._worksheet.title,
+        logging.debug('<<< Session for #{spider_id} spider in "{worksheet_title}" worksheet STARTed.'.format(
+            spider_id=options.current_spider_id,
+            worksheet_title=self._worksheet.title,
         ))
         self._add_starting_row()
         self._rows = []
@@ -62,30 +65,39 @@ class StorageSession:
     def close_session(self) -> None:
         self._add_ending_row()
         self._write_data()
-        print('>>> Session for #{spider} spider in "{tittle}" worksheet ENDed.'.format(
-            spider=start_arguments.spider_id,
-            tittle=self._worksheet.title,
+        logging.debug('>>> Session for #{spider_id} spider in "{worksheet_title}" worksheet ENDed.'.format(
+            spider_id=options.current_spider_id,
+            worksheet_title=self._worksheet.title,
         ))
 
     def _write_data(self) -> None:
         for row in self._rows:
             self._worksheet.append_row(row)
 
-    def _add_ending_row(self):
-        self._rows.append(Row(
+    def _add_starting_row(self):
+        self._worksheet.append_row(Row(
             url='-----',
-            header='{} :: {} articles scraped'.format(str(datetime.now()), str(len(self._rows))),
+            header='{date} / START "{name}" spider'.format(
+                date=self._datetime(),
+                name=self._spider.name,
+            ),
             tags=self._job_url,
             text='-----',
         ).as_list())
 
-    def _add_starting_row(self):
-        self._worksheet.append_row(Row(
+    def _add_ending_row(self):
+        self._rows.append(Row(
             url='-----',
-            header='{} :: BEGIN'.format(str(datetime.now())),
+            header='{date} / {count} articles scraped'.format(
+                date=self._datetime(),
+                count=str(len(self._rows)),
+            ),
             tags=self._job_url,
             text='-----',
         ).as_list())
+
+    def _datetime(self):
+        return datetime.now().strftime('%m.%d %a %H:%M')
 
 
 class Row:

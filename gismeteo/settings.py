@@ -89,5 +89,6 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-# Google Drive Sheet settings
-DEFAULT_WORKSHEET_ID = 1  # second
+# config json files
+GOOGLE_API_SECRET_FILENAME = 'client-secret.json'
+OPTIONS_FILENAME = 'options.json'

@@ -105,3 +105,6 @@ ENV/
 
 # Google API key
 gismeteo/client-secret\.json
+
+# default settings
+gismeteo/options\.json

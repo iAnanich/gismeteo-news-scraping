@@ -1,31 +1,44 @@
-import logging
+import json
 import os
 import sys
+
+from . import settings as s
 
 
 class ArgumentsMaster:
     """ Class for control of given at start arguments, and some environment variables.
     Contains only STR objects
     Arguments can be get from spider too."""
+    jobkey_env_varname = 'SHUB_JOBKEY'
+    options_filename = s.OPTIONS_FILENAME
 
     def __init__(self):
-        """ Define arguments for Python (PyCharm)"""
-        self.api_key = None
-        self.project_id = None
-        self.spreadsheet_tittle = None
-        self.current_project_id = None
-        self.spider_id = None
-        self.job_id = None
-
+        self._env_dict = self._parse_env()
         self._args_dict = self._parse_arguments()
-        self.check_arguments()
-        self.get_job_key()
+        self._file_dict = self._parse_file()
 
-    def get_job_key(self) -> None:
-        self.current_project_id, self.spider_id, self.job_id = os.getenv('SHUB_JOBKEY', '0/0/0').split('/')
+    def get_value(self, key: str):
+        try:
+            value = self._args_dict[key]
+        except KeyError:
+            try:
+                value = self._file_dict[key]
+            except KeyError:
+                raise RuntimeError('Unable to find expected argument: ' + key)
+            else:
+                return value
+        else:
+            return value
 
-    @staticmethod
-    def _parse_arguments() -> dict:
+    def _parse_env(self) -> dict:
+        tupl = os.getenv(self.jobkey_env_varname, '0/0/0').split('/')
+        return {
+            'CURRENT_PROJECT_ID': tupl[0],
+            'CURRENT_SPIDER_ID': tupl[1],
+            'CURRENT_JOB_ID': tupl[2],
+        }
+
+    def _parse_arguments(self) -> dict:
         arguments = sys.argv
         dictionary = {}
         for i in range(len(arguments)):
@@ -34,24 +47,40 @@ class ArgumentsMaster:
                 dictionary[args[0]] = args[1]
         return dictionary
 
-    def check_arguments(self) -> None:
-        try:
-            if self._args_dict['FORCE'] in ['1', 'True']:
-                force = True
-            else:
-                force = True
-        except KeyError:
-            force = False
-        try:
-            """ Define arguments name here"""
-            self.api_key = self._args_dict['API_KEY']
-            self.project_id = self._args_dict['PROJECT_ID']
-            self.spreadsheet_tittle = self._args_dict['SPREADSHEET_TITTLE']
-        except KeyError as e:
-            if force:
-                raise RuntimeError('Unable to find expected argument.' + str(e))
-            else:
-                logging.warning('Unable to find expected argument. Other can be undefined too.' + str(e))
+    def _parse_file(self) -> dict:
+        return json.load(open(self.get_path_to_file(self.options_filename), 'r'))
+
+    @staticmethod
+    def get_path_to_file(file_name: str) -> str:
+        return os.path.join(os.path.abspath(os.path.dirname(__file__)), file_name)
+
+    @property
+    def current_project_id(self) -> str:
+        return self._env_dict['CURRENT_PROJECT_ID']
+
+    @property
+    def current_spider_id(self) -> str:
+        return self._env_dict['CURRENT_SPIDER_ID']
+
+    @property
+    def current_job_id(self) -> str:
+        return self._env_dict['CURRENT_JOB_ID']
+
+    @property
+    def spreadsheet_title(self) -> str:
+        return self.get_value('SPREADSHEET_TITLE')
+
+    @property
+    def api_key(self) -> str:
+        return self.get_value('SCRAPY_CLOUD_API_KEY')
+
+    @property
+    def spider_to_worksheet_dict(self) -> str:
+        return self.get_value('SPIDER_TO_WORKSHEET_DICTIONARY')
+
+    @property
+    def project_id(self) -> str:
+        return self.get_value('SCRAPY_CLOUD_PROJECT_ID')
 
 
-start_arguments = ArgumentsMaster()
+options = ArgumentsMaster()
