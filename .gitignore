@@ -104,4 +104,7 @@ ENV/
 .mypy_cache/
 
 # Google API key
-gismeteo/client-secret\.json
+scrapy_climate/client-secret\.json
+
+# default settings
+scrapy_climate/options\.json

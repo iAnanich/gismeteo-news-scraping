@@ -8,8 +8,10 @@
 import scrapy
 
 
-class LatestNewsIndexItem(scrapy.Item):
-    index = scrapy.Field()
+class ScrapedUrlsItem(scrapy.Item):
+    indexes_json_string = scrapy.Field()
+
+    tmp_list = scrapy.Field()
 
 
 class EventItem(scrapy.Item):
@@ -17,3 +19,5 @@ class EventItem(scrapy.Item):
     tags = scrapy.Field()
     url = scrapy.Field()
     text = scrapy.Field()
+
+    index = scrapy.Field()

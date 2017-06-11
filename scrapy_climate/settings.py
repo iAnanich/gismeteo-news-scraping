@@ -8,11 +8,12 @@
 #     http://doc.scrapy.org/en/latest/topics/settings.html
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
+PROJECT_DIRECTORY_NAME = 'scrapy_climate'
 
-BOT_NAME = 'gismeteo'
+BOT_NAME = 'climate'
 
-SPIDER_MODULES = ['gismeteo.spiders']
-NEWSPIDER_MODULE = 'gismeteo.spiders'
+SPIDER_MODULES = [PROJECT_DIRECTORY_NAME+'.spiders']
+NEWSPIDER_MODULE = PROJECT_DIRECTORY_NAME+'.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
@@ -65,7 +66,7 @@ ROBOTSTXT_OBEY = True
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'gismeteo.pipelines.Sc200327Pipeline': 300,
+    PROJECT_DIRECTORY_NAME+'.pipelines.Sc200327Pipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -89,5 +90,6 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-# Google Drive Sheet settings
-DEFAULT_WORKSHEET_ID = 1  # second
+# config json files
+GOOGLE_API_SECRET_FILENAME = 'client-secret.json'
+OPTIONS_FILENAME = 'options.json'
