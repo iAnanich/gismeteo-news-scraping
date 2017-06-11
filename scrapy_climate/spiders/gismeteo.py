@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-import logging
 
 import scrapy
 
-from .tools import (fetch_latest_job,
-                    convert_list_to_string)
-from ..args import options
-from ..items import LatestNewsIndexItem, EventItem
+from ..items import EventItem, ScrapedUrlsItem
+from ..tools import convert_list_to_string
 
 
 class GismeteoSpider(scrapy.Spider):
@@ -15,20 +12,19 @@ class GismeteoSpider(scrapy.Spider):
     start_urls = ['https://www.gismeteo.ua/news/']
 
     def parse(self, response: scrapy.http.Response):
-        latest_index = self._fetch_latest_scraped_id()
-        indexes = [latest_index]
         # locate `div`s with news
         news = response.css('.item')
+        indexes = []
         for selector in news:
             path = selector.xpath('div[@class="item__title"]/a/@href').extract_first()
-            index = int(path.split('/')[3].split('-')[0])
-            if index <= latest_index:  # do not continue items generation if scraped item found
-                break
-            else:
-                url = 'https://{host}{path}'.format(host=self.allowed_domains[0], path=path)
-                indexes.append(index)
-                yield scrapy.http.Request(url=url, callback=self.parse_article)
-        yield LatestNewsIndexItem(index=max(indexes))
+            url = 'https://{host}{path}'.format(host=self.allowed_domains[0], path=path)
+            index = self._extract_index_from_path(path)
+            indexes.append(index)
+            yield scrapy.http.Request(url=url,
+                                      callback=self.parse_article,
+                                      meta={'index': index})
+        # create item, which be used to store new indexes (see Pipeline)
+        yield ScrapedUrlsItem(tmp_list=indexes)
 
     def parse_article(self, response: scrapy.http.Response):
         # locate article
@@ -45,25 +41,14 @@ class GismeteoSpider(scrapy.Spider):
             header=article.xpath('div[@class="article__h"]/h1/text()').extract_first(),
             tags=tags,
             text=text,
+            index=response.meta['index']
         )
-
-    def _fetch_latest_scraped_id(self) -> int:
-        table = fetch_latest_job(
-            spider=self.name,
-            fields='index',
-            project=options.project_id,
-            key=options.api_key
-        )
-        if len(table) == 1:  # if there is only field name
-            logging.warning('No items from previous jobs')
-            return 0
-        else:
-            for row in [x[0] for x in table[1:]]:  # iterate over items
-                if row != '':  # there must be only one item with this field
-                    return int(row)
-            else:
-                raise RuntimeError('No "index" field in previous job.')
 
     def _clear_text_field(self, text: str) -> str:
         string = str(text).replace('\xa0', ' ')
         return string.replace('\n', '')
+
+    def _extract_index_from_path(self, path: str) -> str:
+        """ function that extracts unique part from given url."""
+        # left only event index
+        return path.split('/')[-2].split('-')[0]
