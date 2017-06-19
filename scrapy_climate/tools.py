@@ -3,6 +3,7 @@ import json
 import time
 import requests as r
 from datetime import timedelta
+from .args import options
 
 
 def _parse_json_responce(url: str):
@@ -37,3 +38,11 @@ def convert_list_to_string(lst: list, separator: str, handler=str) -> str:
     for item in lst[1:]:
         string += separator + handler(item)
     return string
+
+
+def fetch_scraped_indexes(spider_name):
+    return list(fetch_indexes_from_week(
+        project_id=options.project_id,
+        spider_name=spider_name,
+        key=options.api_key,
+    ))
