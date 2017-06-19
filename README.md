@@ -6,14 +6,13 @@ scrapinghub project for scraping news from https://www.gismeteo.ua/news/
 
 Project is writen on Python 3 (tested on 3.5).
 
-It have only one spider - `combine`. It scrapes urls (that weren't scraped yet),
+It have only one spider - `gismeteo`. It scrapes urls (that weren't scraped yet),
 and then follows them and scrapes articles to Google Drive Sheet.
-
 
 #### Google API key
 
 Follow steps [from this page](https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html)
-to generate `.json` key and save it to `gismeteo` folder with `client-secret.json` name.
+to generate `.json` key and save it to `scrapy_climate` folder with `client-secret.json` name.
 
 #### Deploying
 
@@ -24,24 +23,35 @@ Define your project id for each `shub deploy` call, or edit `scrapinghub.yml`.
 
 #### Running
 
-When editing job on Scrapy Cloud, you need to define some arguments:
-* `API_KEY` - your ScrapingHub API key (used to access ScrapyCloud API)
-* `FORCE` - set `True` to get error message when other arguments missed
-(it exist because `shub` runs spiders without arguments when deploying them to cloud)
-* `SPREADSHEET_TITTLE` - name of your Google Drive Sheet
-* `PROJECT_ID` - id of ScrapingHub project from what your spiders will take latest job's data
+To run spider you need to create `options.json` in `scrapy_climate` folder.
+Use JFON format to define variables like:
+```
+{
+  "SCRAPY_CLOUD_API_KEY": "<scrapy_cloud_api_key>",
+  "SCRAPY_CLOUD_PROJECT_ID": "<scrapy_cloud_project_id>",
+  "SPREADSHEET_TITLE": "<google_drive_spreadsheet_title>",
+  "SPIDER_TO_WORKSHEET_DICTIONARY": {
+    "gismeteo": 1
+    "<spider>": <worksheet_id_starting_from_zero>
+  }
+}
+```
 
-To run spiders locally, define those arguments as for spider:
-```
-scrapy crawl <spider> -a <key>=<value> ...
-```
+This file is ignored by git, but will be deployed to ScrapingHub.
 
 #### Storage
 
-Pipeline gives items (instead `LatestNewsIndexItem`) to StorageMaster that
+Pipeline gives items to StorageMaster that
 appends them to defined in spider `arguments` Google Drive Sheet ordered by
-url, header, tags and body of article to **second** (by default in `settings.py`)
+url, header, tags and body of article to worsheet that defined for currently
+running spider in `options.json`
 worksheet (so it must be created before, or spider will raise an RuntimeError), and when
 all items where added, master ends his work with a row that contains
 url to job on ScrapingHub, CPU datetime, number of scraped articles
 and two `-----` strings.
+
+#### How it scrapes only fresh articles?
+
+When spider scrapes `news` page, first of all it fetches `indexes` list of scraped
+articles from last week using Scrapy Cloud API. Then spider iterates over
+links to articles and scrapes only articles that aren't in the `indexes` list.
