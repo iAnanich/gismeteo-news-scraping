@@ -8,16 +8,12 @@
 import scrapy
 
 
-class ScrapedUrlsItem(scrapy.Item):
-    indexes_json_string = scrapy.Field()
-
-    tmp_list = scrapy.Field()
-
-
 class EventItem(scrapy.Item):
     header = scrapy.Field()
     tags = scrapy.Field()
     url = scrapy.Field()
     text = scrapy.Field()
+    video = scrapy.Field()
+    phoro = scrapy.Field()
 
     index = scrapy.Field()
