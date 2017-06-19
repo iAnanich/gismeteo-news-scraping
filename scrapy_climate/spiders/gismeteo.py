@@ -14,7 +14,16 @@ class GismeteoSpider(scrapy.Spider):
 
     def parse(self, response: scrapy.http.Response):
         indexes = self._fetch_scraped_indexes()
-        # locate `div`s with news
+        # extract url from main article in img
+        spot = response.css('.main-news')[0]
+        path = spot.xpath('div/div/a/@href').extract_first()
+        url = 'https://{host}{path}'.format(host=self.allowed_domains[0], path=path)
+        index = self._extract_index_from_path(path)
+        if index not in indexes:
+            yield scrapy.http.Request(url=url,
+                                      callback=self.parse_article,
+                                      meta={'index': index})
+        # extract urls from list
         news = response.css('.item')
         for selector in news:
             path = selector.xpath('div[@class="item__title"]/a/@href').extract_first()
