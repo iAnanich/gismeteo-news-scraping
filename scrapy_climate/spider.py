@@ -17,12 +17,18 @@ class TemplateSpider(scrapy.Spider):
     _protocol = None
     """ 'http' or 'https' """
 
-    _css_selector_article = None
-    _xpath_selector_tags = None
-    _xpath_selector_text = None
-    _xpath_selector_header = None
-    _css_selector_news_list = None
+    _xpath_selector_list_tags = None
+    _xpath_selector_list_text = None
+    _xpath_selector_list_header = None
+    """ These three `_xpath_selector_list_*` are used to find needed data by multiple selectors
+    in different places. Must contain list of strings or tuple of strings."""
     _xpath_selector_path = None
+    """ `_xpath_selector_path` is used to find relative href to article page when scraping from
+    news list page. Must contain string."""
+    _css_selector_news_list = None
+    _css_selector_article = None
+    """ These two `_css_selector_*` fields are used to locate news list div tag on news list page and
+    to locate article div tag on article page. Must contain string."""
 
     ### "parse" methods
     def parse(self, response: scrapy.http.Response):
@@ -84,30 +90,36 @@ class TemplateSpider(scrapy.Spider):
             yield from self._yield_request(path)
 
     ### "find" methods that returns Selectors
+    def _find_by_xpath_list(self, article: scrapy.selector.SelectorList, xpath_string_selectors_list: list or tuple) -> scrapy.selector.SelectorList:
+        selector_list = article.xpath(xpath_string_selectors_list[0])
+        for string_selector in xpath_string_selectors_list[1:]:
+            selector_list.extend(article.xpath(string_selector))
+        return selector_list
+
     def _find_article_in_responce(self, response: scrapy.http.Response) -> scrapy.selector.SelectorList:
         return response.css(self._css_selector_article)
 
     def _find_news_list_in_responce(self, response: scrapy.http.Response) -> scrapy.selector.SelectorList:
         return response.css(self._css_selector_news_list)
 
-    def _find_tags(self, article: scrapy.selector.SelectorList) -> scrapy.selector.SelectorList:
-        return article.xpath(self._xpath_selector_tags)
+    def _find_tags_in_article(self, article: scrapy.selector.SelectorList) -> scrapy.selector.SelectorList:
+        return self._find_by_xpath_list(article, self._xpath_selector_list_tags)
 
-    def _find_text(self, article: scrapy.selector.SelectorList) -> scrapy.selector.SelectorList:
-        return article.xpath(self._xpath_selector_text)
+    def _find_text_in_article(self, article: scrapy.selector.SelectorList) -> scrapy.selector.SelectorList:
+        return self._find_by_xpath_list(article, self._xpath_selector_list_text)
 
-    def _find_header(self, article: scrapy.selector.SelectorList) -> scrapy.selector.SelectorList:
-        return article.xpath(self._xpath_selector_header)
+    def _find_header_in_article(self, article: scrapy.selector.SelectorList) -> scrapy.selector.SelectorList:
+        return self._find_by_xpath_list(article, self._xpath_selector_list_header)
 
     ### "extract" methods that returns strings
     def _extract_tags(self, article: scrapy.selector.SelectorList) -> str:
-        return convert_list_to_string(self._find_tags(article).extract(), ',')
+        return convert_list_to_string(self._find_tags_in_article(article).extract(), ',')
 
     def _extract_text(self, article: scrapy.selector.SelectorList) -> str:
-        return convert_list_to_string(self._find_text(article).extract(), '', handler=self._clear_text_field)
+        return convert_list_to_string(self._find_text_in_article(article).extract(), '', handler=self._clear_text_field)
 
     def _extract_header(self, article: scrapy.selector.SelectorList) -> str:
-        return self._find_header(article).extract_first()
+        return self._find_header_in_article(article).extract_first()
 
     @property
     def allowed_domains(self):
