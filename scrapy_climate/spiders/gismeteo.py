@@ -13,9 +13,10 @@ class GismeteoSpider(TemplateSpider):
     _protocol = 'https'
 
     _css_selector_article = '.article'
-    _xpath_selector_tags = 'div[@class="article__tags links-grey"]/a/text()'
-    _xpath_selector_text = 'div[@class="article__i ugc"]/div/text()'
-    _xpath_selector_header = 'div[@class="article__h"]/h1/text()'
+    _xpath_selector_list_tags = ['div[@class="article__tags links-grey"]/a/text()', ]
+    _xpath_selector_list_text = ['div[@class="article__i ugc"]/div/text()',
+                                 'div[@class="article__i ugc"]/div/div/text()']
+    _xpath_selector_list_header = ['div[@class="article__h"]/h1/text()', ]
     _css_selector_news_list = '.item'
     _xpath_selector_path = 'div[@class="item__title"]/a/@href'
 
