@@ -55,3 +55,10 @@ and two `-----` strings.
 When spider scrapes `news` page, first of all it fetches `indexes` list of scraped
 articles from last week using Scrapy Cloud API. Then spider iterates over
 links to articles and scrapes only articles that aren't in the `indexes` list.
+
+#### Inheriting
+
+In `scrapy_climate/spider.py` Python module it is `TemplateSpider` class
+which can be use used as parent for actually running spiders. To make new
+spider you will need to configure it's selectors and define name, domain,
+and relative path to first page. More about it in the docstrings.
