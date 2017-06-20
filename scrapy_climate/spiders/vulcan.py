@@ -3,8 +3,8 @@
 from ..spider import TemplateSpider
 
 
-class VulcanSpider(TemplateSpider):
-    name = 'vulcan'
+class IzverzhenieVulkanaSpider(TemplateSpider):
+    name = 'izverzhenie-vulkana'
 
     _start_path = ''
     _start_domain = 'izverzhenie-vulkana.ru'
