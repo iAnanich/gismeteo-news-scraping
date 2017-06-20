@@ -67,8 +67,15 @@ class TemplateSpider(scrapy.Spider):
         return fetch_scraped_indexes(self.name)
 
     ### "yield" methods that returns generators
-    def _yield_request(self, path: str):
-        url = '{protocol}://{host}/{path}'.format(protocol=self._protocol, host=self.allowed_domains[0], path=path)
+    def _yield_request(self, path_or_url: str):
+        if '://' in path_or_url:
+            url = path_or_url
+            # extracting relative path from url
+            _protocol = self._protocol + '://'
+            path = path_or_url[path_or_url[len(_protocol):].find('/') + len(_protocol) + 1:]
+        else:
+            path = path_or_url
+            url = '{protocol}://{host}/{path}'.format(protocol=self._protocol, host=self.allowed_domains[0], path=path)
         index = self._convert_path_to_index(path)
         if index not in self._scraped_indexes:
             yield scrapy.http.Request(url=url,
