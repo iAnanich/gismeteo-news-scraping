@@ -10,7 +10,7 @@ class GismeteoSpider(TemplateSpider):
 
     _start_path = 'news/'
     _start_domain = 'www.gismeteo.ua'
-    _protocol = 'https'
+    _scheme = 'https'
 
     _css_selector_article = '.article'
     _xpath_selector_list_tags = ['div[@class="article__tags links-grey"]/a/text()', ]
@@ -18,7 +18,7 @@ class GismeteoSpider(TemplateSpider):
                                  'div[@class="article__i ugc"]/div/div/text()']
     _xpath_selector_list_header = ['div[@class="article__h"]/h1/text()', ]
     _css_selector_news_list = '.item'
-    _xpath_selector_path = 'div[@class="item__title"]/a/@href'
+    _xpath_selector_path_or_url = 'div[@class="item__title"]/a/@href'
 
     def parse(self, response: scrapy.http.Response):
         self._scraped_indexes = self._scraped_in_past

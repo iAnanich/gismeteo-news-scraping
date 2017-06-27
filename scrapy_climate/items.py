@@ -8,12 +8,12 @@
 import scrapy
 
 
-class EventItem(scrapy.Item):
+class ArticleItem(scrapy.Item):
     header = scrapy.Field()
     tags = scrapy.Field()
     url = scrapy.Field()
     text = scrapy.Field()
     video = scrapy.Field()
-    phoro = scrapy.Field()
+    photo = scrapy.Field()
 
     index = scrapy.Field()
