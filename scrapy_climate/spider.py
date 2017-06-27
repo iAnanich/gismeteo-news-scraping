@@ -10,7 +10,100 @@ from .items import ArticleItem
 from .tools import convert_list_to_string, fetch_scraped_indexes
 
 
-class TemplateSpider(scrapy.Spider):
+class ParserMixin:
+
+    # CSS selectors for finding "news-list tag"/"article tag"
+    # on "news-list page"/"article page" in the response
+    # Must be a string.
+    _css_selector_news_list = None
+    _css_selector_article = None
+
+    # XPATH selector used to find path or url to "article page" under
+    # "news-list tag". It is relative selector.
+    # Must be a string.
+    _xpath_selector_path_or_url = None
+
+    # XPATH selector lists used to find needed data on the "article page"
+    # under "article tag". There are relative selectors.
+    # Must be a string.
+    _xpath_selector_list_tags = None
+    _xpath_selector_list_text = None
+    _xpath_selector_list_header = None
+
+    # ================
+    #  "find" methods
+    # ================
+    # uses `SelectorList` to find specific HTML tag on the page or inside
+    # another HTML tag
+    def _find_article_in_response(self, response: Response) -> SelectorList:
+        return response.css(self._css_selector_article)
+
+    def _find_news_list_in_response(self, response: Response) -> SelectorList:
+        return response.css(self._css_selector_news_list)
+
+    def _find_tags_in_article(self, article: SelectorList) -> SelectorList:
+        return self._find_by_xpath_list(article,
+                                        self._xpath_selector_list_tags)
+
+    def _find_text_in_article(self, article: SelectorList) -> SelectorList:
+        return self._find_by_xpath_list(article,
+                                        self._xpath_selector_list_text)
+
+    def _find_header_in_article(self, article: SelectorList) -> SelectorList:
+        return self._find_by_xpath_list(article,
+                                        self._xpath_selector_list_header)
+
+    # ===================
+    #  "extract" methods
+    # ===================
+    # uses `SelectorList.extract` method to extract data from HTML tag
+    def _extract_tags(self, article: SelectorList) -> str:
+        return convert_list_to_string(
+            self._find_tags_in_article(article).extract(), ',')
+
+    def _extract_text(self, article: SelectorList) -> str:
+        return convert_list_to_string(
+            self._find_text_in_article(article).extract(),
+            separator='',
+            handler=self._clear_text_field,)
+
+    def _extract_header(self, article: SelectorList) -> str:
+        return self._find_header_in_article(article).extract_first()
+
+    def _extract_url_or_path_from_block(self, block: SelectorList) -> str:
+        return block.xpath(self._xpath_selector_path_or_url).extract_first()
+
+    # =========
+    #  helpers
+    # =========
+    @staticmethod
+    def _find_by_xpath_list(
+            article: SelectorList,
+            xpath_string_selectors_list: list or tuple) -> SelectorList:
+        """
+        Iterates over XPATH string selectors in
+        `xpath_string_selector_list` uses them for `article` selector and
+        returns SelectorList of results.
+        :param article: SelectorList that matches "article tag"
+        :param xpath_string_selectors_list: list or tuple of string XPATH
+        selectors for `article` selector
+        :return: SelectorList with selector fo every given string selector
+        in `xpath_string_selector_list` in `article` selector
+        """
+        return SelectorList([article.xpath(selector)
+                             for selector in xpath_string_selectors_list])[0]
+
+    def _clear_text_field(self, text: str) -> str:
+        """
+        Function clears text from different special characters that must be
+        in the worksheet.
+        :param text: string that must be cleared from unneeded characters
+        :return: cleared string
+        """
+        return str(text).replace('\xa0', ' ').replace('\n', '')
+
+
+class TemplateSpider(scrapy.Spider, ParserMixin):
     """
     This class must not be used properly, only for inheritance.
 
@@ -66,24 +159,6 @@ class TemplateSpider(scrapy.Spider):
 
     # URL scheme. Allowed values: 'http', 'https'
     _scheme = None
-
-    # CSS selectors for finding "news-list tag"/"article tag"
-    # on "news-list page"/"article page" in the response
-    # Must be a string.
-    _css_selector_news_list = None
-    _css_selector_article = None
-
-    # XPATH selector used to find path or url to "article page" under
-    # "news-list tag". It is relative selector.
-    # Must be a string.
-    _xpath_selector_path_or_url = None
-
-    # XPATH selector lists used to find needed data on the "article page"
-    # under "article tag". There are relative selectors.
-    # Must be a string.
-    _xpath_selector_list_tags = None
-    _xpath_selector_list_text = None
-    _xpath_selector_list_header = None
 
     def __init__(self, *args, **kwargs):
         # fetch scraped in the past "indexes" by getting value from property
@@ -173,49 +248,6 @@ class TemplateSpider(scrapy.Spider):
             **kwargs
         )
 
-    # ================
-    #  "find" methods
-    # ================
-    # uses `SelectorList` to find specific HTML tag on the page or inside
-    # another HTML tag
-    def _find_article_in_response(self, response: Response) -> SelectorList:
-        return response.css(self._css_selector_article)
-
-    def _find_news_list_in_response(self, response: Response) -> SelectorList:
-        return response.css(self._css_selector_news_list)
-
-    def _find_tags_in_article(self, article: SelectorList) -> SelectorList:
-        return self._find_by_xpath_list(article,
-                                        self._xpath_selector_list_tags)
-
-    def _find_text_in_article(self, article: SelectorList) -> SelectorList:
-        return self._find_by_xpath_list(article,
-                                        self._xpath_selector_list_text)
-
-    def _find_header_in_article(self, article: SelectorList) -> SelectorList:
-        return self._find_by_xpath_list(article,
-                                        self._xpath_selector_list_header)
-
-    # ===================
-    #  "extract" methods
-    # ===================
-    # uses `SelectorList.extract` method to extract data from HTML tag
-    def _extract_tags(self, article: SelectorList) -> str:
-        return convert_list_to_string(
-            self._find_tags_in_article(article).extract(), ',')
-
-    def _extract_text(self, article: SelectorList) -> str:
-        return convert_list_to_string(
-            self._find_text_in_article(article).extract(),
-            separator='',
-            handler=self._clear_text_field,)
-
-    def _extract_header(self, article: SelectorList) -> str:
-        return self._find_header_in_article(article).extract_first()
-
-    def _extract_url_or_path_from_block(self, block: SelectorList) -> str:
-        return block.xpath(self._xpath_selector_path_or_url).extract_first()
-
     # ============
     #  properties
     # ============
@@ -234,15 +266,6 @@ class TemplateSpider(scrapy.Spider):
     # =========
     #  helpers
     # =========
-    def _clear_text_field(self, text: str) -> str:
-        """
-        Function clears text from different special characters that must be
-        in the worksheet.
-        :param text: string that must be cleared from unneeded characters
-        :return: cleared string
-        """
-        return str(text).replace('\xa0', ' ').replace('\n', '')
-
     def _convert_path_to_index(self, path: str) -> str:
         """
         Extracts "index" (see entities in the `TemplateSpider` class'
@@ -267,22 +290,6 @@ class TemplateSpider(scrapy.Spider):
         else:
             raise NotImplementedError('Need to define "{}" field.'
                                       .format(field_name))
-
-    def _find_by_xpath_list(
-            self, article: SelectorList,
-            xpath_string_selectors_list: list or tuple) -> SelectorList:
-        """
-        Iterates over XPATH string selectors in
-        `xpath_string_selector_list` uses them for `article` selector and
-        returns SelectorList of results.
-        :param article: SelectorList that matches "article tag"
-        :param xpath_string_selectors_list: list or tuple of string XPATH
-        selectors for `article` selector
-        :return: SelectorList with selector fo every given string selector
-        in `xpath_string_selector_list` in `article` selector
-        """
-        return SelectorList([article.xpath(selector)
-                             for selector in xpath_string_selectors_list])[0]
 
     @property
     def _scraped_in_past(self):
