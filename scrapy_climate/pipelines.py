@@ -10,7 +10,7 @@ import logging
 import scrapy
 
 from .args import options
-from .items import EventItem
+from .items import ArticleItem
 from .storage import StorageMaster, StorageSession
 
 
@@ -27,7 +27,7 @@ class Sc200327Pipeline(object):
         self.storage_session.close_session()
 
     def process_item(self, item: scrapy.item.Item, spider: scrapy.spiders.Spider):
-        if isinstance(item, EventItem):
+        if isinstance(item, ArticleItem):
             self.storage_session.append_item(item)
             return item
         else:
