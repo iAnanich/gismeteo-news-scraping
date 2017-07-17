@@ -15,17 +15,20 @@
     * callback - method which takes request and yields another request or item
 """
 
-import scrapy
-
+import logging
 from urllib.parse import urlparse, urlunparse
+
+import scrapy
 from scrapy.http import Response, Request
 
-from .items import ArticleItem
-from .tools import fetch_scraped_indexes
-from .mixins import ParserMixin
+from .item import ArticleItem
+from .cloud import CloudInterface
+from .extractor import Extractor
+
+logger = logging.getLogger(__name__)
 
 
-class TemplateSpider(scrapy.Spider, ParserMixin):
+class SingleSpider(scrapy.Spider):
     """
     This class must not be used properly, only for inheritance.
 
@@ -72,11 +75,32 @@ class TemplateSpider(scrapy.Spider, ParserMixin):
     # URL scheme. Allowed values: 'http', 'https'
     _scheme = None
 
+    # Extractors used to extract needed data from HTML
+    # Must be `Extractor` instances.
+    _link_extractor = None
+    _header_extractor = None
+    _tags_extractor = None
+    _text_extractor = None
+
     def __init__(self, *args, **kwargs):
-        # fetch scraped in the past "indexes" by getting value from property
-        self._scraped_indexes = self._scraped_in_past
-        # instantiate `scrapy.Spider` class
+        self.cloud = None
+        self._scraped_indexes = None
+        for field in [self._link_extractor,
+                      self._header_extractor,
+                      self._tags_extractor,
+                      self._text_extractor]:
+            assert isinstance(field, Extractor)
         super().__init__(*args, **kwargs)
+
+    def connect_cloud(self, cloud: CloudInterface):
+        self.cloud = cloud
+        # use `list()` here because we will iterate over
+        # `self._scraped_indexes` many times and this might reduce traffic
+        self._scraped_indexes = list(cloud.fetch_week_indexes())
+        # log it
+        msg = 'Scraped indexes: ' + self._scraped_indexes.__repr__()
+        logger.debug(msg)
+        print('DEBUG ::', msg)
 
     # =================
     #  "parse" methods
@@ -98,14 +122,15 @@ class TemplateSpider(scrapy.Spider, ParserMixin):
         :param response: `Scrapy.http.Response` instance from "article page"
         :return: yields `ArticleItem` instance
         """
-        # locate article
-        article = self._find_article_in_response(response)
+        text = self._text_extractor.extract_from(response)
+        header = self._header_extractor.extract_from(response)
+        tags = self._tags_extractor.extract_from(response)
         # produce item
         yield from self._yield_article_item(
             response,
-            text=self._extract_text(article),
-            header=self._extract_header(article),
-            tags=self._extract_tags(article),
+            text=text,
+            header=header,
+            tags=tags,
         )
 
     # ============
@@ -142,9 +167,8 @@ class TemplateSpider(scrapy.Spider, ParserMixin):
         :param response: `scrapy.http.Response` from "news-list page"
         :return: yield `scrapy.http.Request` instance
         """
-        for block in list(self._find_news_list_in_response(response)):
-            yield from self._yield_request(
-                self._extract_url_or_path_from_block(block))
+        for link in self._link_extractor.extract_from(response):
+            yield from self._yield_request(link)
 
     def _yield_article_item(self, response: Response, **kwargs):
         """
@@ -202,12 +226,3 @@ class TemplateSpider(scrapy.Spider, ParserMixin):
         else:
             raise NotImplementedError('Need to define "{}" field.'
                                       .format(field_name))
-
-    @property
-    def _scraped_in_past(self):
-        """
-        Uses `tools.fetch_scraped_indexes` to fetch "indexes" scraped from
-        last week by using Scrapy Cloud API.
-        :return: list of "indexes" strings
-        """
-        return fetch_scraped_indexes(self.name)

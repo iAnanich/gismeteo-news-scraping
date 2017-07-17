@@ -5,23 +5,35 @@ import gspread
 import scrapy
 from oauth2client.service_account import ServiceAccountCredentials as Creds
 
-from . import settings as s
+from scrapy_climate import settings as s
 from .args import options
 
 
+def _to_bool(string: str) -> bool:
+    if string in ['True', '1']:
+        return True
+    elif string in ['False', '0']:
+        return False
+    else:
+        raise ValueError('Unknown string value: ' + string)
+
+
 class StorageMaster:
+
     secret_file_name = s.GOOGLE_API_SECRET_FILENAME
+
     sheet_name = options.spreadsheet_title
     spider_to_worksheet_dict = options.spider_to_worksheet_dict
 
     def __init__(self):
-        self._path_to_secret = options.get_path_to_file(self.secret_file_name)
+        self._path_to_secret = options.path_to_config_file(self.secret_file_name)
         self._credentials = self._get_credentials()
         self._client = self._get_client()
         self.spreadsheet = self._client.open(self.sheet_name)
 
     def _get_credentials(self) -> Creds:
-        return Creds.from_json_keyfile_name(self._path_to_secret, ['https://spreadsheets.google.com/feeds'])
+        return Creds.from_json_keyfile_name(
+            self._path_to_secret, ['https://spreadsheets.google.com/feeds'])
 
     def _get_client(self) -> gspread.Client:
         return gspread.authorize(self._credentials)
@@ -40,6 +52,14 @@ class StorageMaster:
 
 
 class StorageSession:
+
+    open_template = options.storage_open_format
+    close_template = options.storage_close_format
+    date_format = options.storage_datefmt
+
+    open_line = _to_bool(options.storage_close_line)
+    close_line = _to_bool(options.storage_open_line)
+
     def __init__(self, worksheet: gspread.Worksheet, spider: scrapy.spiders.Spider):
         self._spider = spider
         self._worksheet = worksheet
@@ -55,7 +75,8 @@ class StorageSession:
             spider_id=options.current_spider_id,
             worksheet_title=self._worksheet.title,
         ))
-        self._add_starting_row()
+        if self.open_line:
+            self._add_starting_row()
         self._rows = []
         return self
 
@@ -63,7 +84,8 @@ class StorageSession:
         self._rows.append(Row(item).as_list())
 
     def close_session(self) -> None:
-        self._add_ending_row()
+        if self.close_line:
+            self._add_close_row()
         self._write_data()
         logging.debug('>>> Session for #{spider_id} spider in "{worksheet_title}" worksheet ENDed.'.format(
             spider_id=options.current_spider_id,
@@ -77,7 +99,7 @@ class StorageSession:
     def _add_starting_row(self):
         self._worksheet.append_row(Row(
             url='-----',
-            header='{date} / START "{name}" spider'.format(
+            header=self.open_template.format(
                 date=self._datetime(),
                 name=self._spider.name,
             ),
@@ -85,10 +107,10 @@ class StorageSession:
             text='-----',
         ).as_list())
 
-    def _add_ending_row(self):
+    def _add_close_row(self):
         self._rows.append(Row(
             url='-----',
-            header='{date} / {count} articles scraped'.format(
+            header=self.close_template.format(
                 date=self._datetime(),
                 count=str(len(self._rows)),
             ),
@@ -97,12 +119,15 @@ class StorageSession:
         ).as_list())
 
     def _datetime(self):
-        return datetime.now().strftime('%m.%d %a %H:%M')
+        return datetime.now().strftime(self.date_format)
 
 
 class Row:
     """ Place to configure fields order in a table"""
+
     columns_order = ['url', 'header', 'tags', 'text']
+    hyperlink_template = '=HYPERLINK("{link}";"{text}")'
+    format_hyperlinks = False
 
     def __init__(self, item: scrapy.item.Item or dict = None,
                  url: str = None,
@@ -117,5 +142,28 @@ class Row:
     def as_list(self) -> list:
         lst = []
         for column in self.columns_order:
-            lst.append(self.item[column])
+            value = self.item[column]
+            if column in ['text'] and self.format_hyperlinks:
+                value = self.format_hyperlink(value)
+            lst.append(value)
         return lst
+
+    def format_hyperlink(self, string: str) -> str:
+        # TODO: use `regex`
+        try:
+            text_open = string.find('[')
+            text_close = text_open + string[text_open:].find(']')
+            link_open = text_close + 1
+            link_close = link_open + string[link_open:].find(')')
+            assert -1 < text_open < text_close < link_open < link_close
+            assert string[link_open] == '('
+            text = string[text_open + 1: text_close]
+            link = string[link_open + 1: link_close]
+            string_before = string[:text_open]
+            string_after = string[link_close + 1:]
+            hyperlink = self.hyperlink_template.format(link=link, text=text)
+            new_string = string_before + hyperlink + string_after
+        except AssertionError:
+            return string
+        else:
+            return new_string
