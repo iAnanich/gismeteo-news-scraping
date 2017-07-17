@@ -55,7 +55,7 @@ EXTENSIONS = {
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    PROJECT_DIRECTORY_NAME+'.news_tools.pipeline.StoragePipeline': 300,
+    PROJECT_DIRECTORY_NAME+'.tools.pipeline.StoragePipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

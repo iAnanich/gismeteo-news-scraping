@@ -18,9 +18,10 @@
 import logging
 from urllib.parse import urlparse, urlunparse
 
-import scrapy
+from scrapy import Spider
 from scrapy.http import Response, Request
 
+from .args import options
 from .item import ArticleItem
 from .cloud import CloudInterface
 from .extractor import Extractor
@@ -28,7 +29,10 @@ from .extractor import Extractor
 logger = logging.getLogger(__name__)
 
 
-class SingleSpider(scrapy.Spider):
+SCRAPE_DUPLICATES = options.allow_duplicates in ['True', '1']
+
+
+class SingleSpider(Spider):
     """
     This class must not be used properly, only for inheritance.
 
@@ -82,6 +86,8 @@ class SingleSpider(scrapy.Spider):
     _tags_extractor = None
     _text_extractor = None
 
+    _article_item_class = ArticleItem
+
     def __init__(self, *args, **kwargs):
         self.cloud = None
         self._scraped_indexes = None
@@ -93,9 +99,18 @@ class SingleSpider(scrapy.Spider):
         super().__init__(*args, **kwargs)
 
     def connect_cloud(self, cloud: CloudInterface):
+        """
+        binds `cloud` argument as `cloud` attribute and calls it's
+        `fetch_week_indexes` method to store the result as list in
+        `_scraped_indexes` attribute to use it the future for filtering
+        duplicates.
+        :param cloud: instance of `cloud.CloudInterface`
+        :return: None
+        """
         self.cloud = cloud
         # use `list()` here because we will iterate over
-        # `self._scraped_indexes` many times and this might reduce traffic
+        # `self._scraped_indexes` many times and iterating now might reduce
+        # the traffic
         self._scraped_indexes = list(cloud.fetch_week_indexes())
         # log it
         msg = 'Scraped indexes: ' + self._scraped_indexes.__repr__()
@@ -155,7 +170,7 @@ class SingleSpider(scrapy.Spider):
             url = urlunparse([self._scheme, self._start_domain, path,
                               None, None, None])
         index = self._convert_path_to_index(path)
-        if index not in self._scraped_indexes:
+        if index not in self._scraped_indexes or SCRAPE_DUPLICATES:
             yield Request(url=url,
                           callback=self.parse_article,
                           meta={'index': index})
@@ -178,7 +193,7 @@ class SingleSpider(scrapy.Spider):
         :param kwargs: fields for `ArticleItem`
         :return: yields `ArticleItem` instance
         """
-        yield ArticleItem(
+        yield self._article_item_class(
             url=response.url,
             index=response.meta['index'],
             **kwargs

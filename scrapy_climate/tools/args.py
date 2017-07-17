@@ -153,6 +153,14 @@ class ArgumentsMaster:
         )
 
     @property
+    def allow_duplicates(self) -> str:
+        return self.get_value(
+            'ALLOW_DUPLICATES',
+            default='False',
+            required=False
+        )
+
+    @property
     def api_key(self) -> str:
         return self.get_value('SCRAPY_CLOUD_API_KEY')
 
