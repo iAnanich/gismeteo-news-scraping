@@ -104,7 +104,7 @@ ENV/
 .mypy_cache/
 
 # Google API key
-scrapy_climate/client-secret\.json
+client-secret.json
 
 # default settings
-scrapy_climate/options\.json
+options.json

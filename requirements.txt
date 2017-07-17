@@ -15,6 +15,7 @@ httplib2==0.10.3
 idna==2.5
 incremental==17.5.0
 lxml==3.7.3
+msgpack-python==0.4.8
 oauth2client==4.1.0
 parsel==1.2.0
 pyasn1==0.2.3
@@ -30,10 +31,10 @@ rsa==3.4.2
 scrapinghub==2.0.0
 Scrapy==1.4.0
 service-identity==17.0.0
-shub==2.6.1
+shub==2.7.0
 six==1.10.0
 tqdm==4.14.0
-Twisted==17.1.0
+twisted==17.5.0
 urllib3==1.21.1
 w3lib==1.17.0
 websocket-client==0.40.0

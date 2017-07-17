@@ -10,7 +10,6 @@ setup(
     name='project',
     version='0.1',
     packages=find_packages(),
-    data_files=[(PROJECT_DIRECTORY_NAME, [PROJECT_DIRECTORY_NAME+'/client-secret.json',
-                                    PROJECT_DIRECTORY_NAME+'/options.json'])],
+    data_files=[('', ['client-secret.json', 'options.json'])],
     entry_points={'scrapy': ['settings = {}.settings'.format(PROJECT_DIRECTORY_NAME)]},
 )
