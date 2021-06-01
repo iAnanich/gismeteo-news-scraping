@@ -34,7 +34,7 @@ shub==2.6.1
 six==1.10.0
 tqdm==4.14.0
 Twisted==17.1.0
-urllib3==1.21.1
+urllib3==1.26.5
 w3lib==1.17.0
 websocket-client==0.40.0
 zope.interface==4.4.1
